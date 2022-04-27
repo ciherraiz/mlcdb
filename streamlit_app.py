@@ -5,9 +5,13 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+# Cargamos configuración
+r = requests.get(url='https://ciherraiz.pythonanywhere.com/conf')
+cfg = json.loads(r.text)
 
-MAX_MEDIDAS_GR = 60
-LONGITUD = 10
+# Asignamos parámetros
+longitud = int(cfg['longitud_serie'])
+max_medidas_gr = int(cfg['medidas_grafico_agrupacion'])
 
 # https://share.streamlit.io/streamlit/emoji-shortcodes
 EMOJI = {0: ':neutral_face:',
@@ -27,7 +31,7 @@ st.set_page_config(
 
 #Creamos menú de la izquierda
 with st.sidebar:
-    menu = st.selectbox('Opción', ('Individuo', 'Agrupado', 'Tiempo real'))
+    menu = st.selectbox('Opción', ('Individuo', 'Agrupado', 'Tiempo real', 'Configuración'))
 
 if menu == 'Tiempo real':
     # Creamos un espacio vacío
@@ -63,8 +67,8 @@ if menu == 'Tiempo real':
 
             gr1, gr2 = st.columns(2)
 
-            if len(df_total) > MAX_MEDIDAS_GR:
-                df_gr = df_total[-MAX_MEDIDAS_GR:]
+            if len(df_total) > max_medidas_gr:
+                df_gr = df_total[-max_medidas_gr:]
                 
             else:
                 df_gr = df_total
@@ -77,7 +81,7 @@ if menu == 'Tiempo real':
                 st.write(fig1)
 
             with gr2:
-                fig2 = px.line(df_gr, x="momento", y="acc", title='Acceleración', color='id', template="plotly_white") 
+                fig2 = px.line(df_gr, x="momento", y="acc", title='Aceleración', color='id', template="plotly_white") 
                 fig2.update_layout(paper_bgcolor="rgb(255,255,255)", plot_bgcolor="rgb(255,255,255)")
                 st.write(fig2)
 
@@ -123,7 +127,7 @@ if menu == 'Individuo':
             st.write(fig1)
 
         with gr2:
-            fig2 = px.line(df, x="tiempo", y="acc", title='Acceleración') 
+            fig2 = px.line(df, x="tiempo", y="acc", title='Aceleración') 
             fig2.add_vline(x=fin_calibrado, line_width=3, line_dash="dash", line_color="green")
             fig2.update_layout(paper_bgcolor="rgb(255,255,255)", plot_bgcolor="rgb(255,255,255)")
             st.write(fig2)
@@ -149,16 +153,16 @@ if menu=='Agrupado':
         gr1, gr2 = st.columns(2)
         fig1 = go.Figure()
         fig2 = go.Figure()
-        for i in range(0, len(df), LONGITUD):
-            fig1.add_traces(go.Scatter(x=df.index[i:i+LONGITUD],
-                                        y=df[i:i+LONGITUD]['valor'],
-                                line_color=px.colors.qualitative.Plotly[df[i:i+LONGITUD]['grupo_recod'].unique().squeeze()],
+        for i in range(0, len(df), longitud):
+            fig1.add_traces(go.Scatter(x=df.index[i:i+longitud],
+                                        y=df[i:i+longitud]['valor'],
+                                line_color=px.colors.qualitative.Plotly[df[i:i+longitud]['grupo_recod'].unique().squeeze()],
                                 mode='lines'))
             fig1.update_layout(showlegend=False)
 
             fig2.add_traces(go.Scatter(
-                                        y=df[i:i+LONGITUD]['valor'],
-                                line_color=px.colors.qualitative.Plotly[df[i:i+LONGITUD]['grupo_recod'].unique().squeeze()],
+                                        y=df[i:i+longitud]['valor'],
+                                line_color=px.colors.qualitative.Plotly[df[i:i+longitud]['grupo_recod'].unique().squeeze()],
                                 mode='lines'))
             fig2.update_layout(showlegend=False)
         
@@ -168,3 +172,19 @@ if menu=='Agrupado':
             st.write(fig2)
     else:
         st.warning("No hay datos disponibles")
+
+if menu == 'Configuración':
+    r = requests.get(url='https://ciherraiz.pythonanywhere.com/conf')
+    cfg = json.loads(r.text)
+    #st.json(cfg)
+    cfg['directorio_datos'] = st.text_input('Ruta ficheros de datos', cfg['directorio_datos'])
+    cfg['longitud_serie'] = st.text_input('Longitud serie temporal', cfg['longitud_serie'])
+    cfg['medidas_grafico_agrupacion'] = st.text_input('Máximo número de medidas en gráfico de agrupación', cfg['medidas_grafico_agrupacion'])
+    cfg['numero_grupos'] = st.text_input('Número de grupos a realizar', cfg['numero_grupos'])
+    cfg['espera_agrupar'] = st.text_input('Tiempo de espera entre agrupación (seg)', cfg['espera_agrupar'])
+    cfg['minimo_medidas_agrupar'] = st.text_input('Mínimo de medidas para comenzar agrupación', cfg['minimo_medidas_agrupar'])
+
+    #st.write(nueva_cfg)
+    rp = requests.post('https://ciherraiz.pythonanywhere.com/conf', json=cfg)
+    if rp.status_code != 200:
+        st.error('Error al almacenar configuracion')

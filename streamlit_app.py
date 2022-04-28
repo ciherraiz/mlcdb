@@ -51,39 +51,44 @@ if menu == 'Tiempo real':
         df_total = pd.concat([df_total, df_tmp]).drop_duplicates()
         
         with espacio.container():
-            participantes = df_tmp['id'].unique()
+            #participantes = df_tmp['id'].unique()
             
-            try:
-                df_tmp_grp = pd.read_csv("https://ciherraiz.pythonanywhere.com/ultimasgrp")[['id', 'grupo', 'grupo_recod', 'etiqueta_recod']]
-                for i, p in df_tmp_grp.iterrows():
-                    st.markdown(EMOJI[p['grupo_recod']] + ' ' + str(p['id']) + '('+p['etiqueta_recod']+')')
-            except:
-                st.markdown('Datos de agrupamiento aún no disponibles :hourglass_flowing_sand:')
+            
 
-            kpi1, kpi2 = st.columns(2)
+            #kpi1, kpi2 = st.columns(2)
 
-            kpi1.metric(label='Participantes ', value = len(participantes))
-            kpi2.metric(label='Mediciones ', value = len(df_total))
+            #kpi1.metric(label='Participantes ', value = len(participantes))
+            #kpi2.metric(label='Mediciones ', value = len(df_total))
 
-            gr1, gr2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
             if len(df_total) > max_medidas_gr:
-                df_gr = df_total[-max_medidas_gr:]
+                df_total = df_total[-max_medidas_gr:]
+                df_gr = df_total
                 
             else:
                 df_gr = df_total
 
             df_gr['acc'] = df_gr['accx'].abs() + df_gr['accy'].abs() + df_gr['accz'].abs()
 
-            with gr1:
+            with col1:
                 fig1 = px.line(df_gr, x="momento", y="fc", title='Frecuencia cardiaca', color='id', template="plotly_white") 
                 fig1.update_layout(paper_bgcolor="rgb(255,255,255)", plot_bgcolor="rgb(255,255,255)")
                 st.write(fig1)
 
-            with gr2:
                 fig2 = px.line(df_gr, x="momento", y="acc", title='Aceleración', color='id', template="plotly_white") 
                 fig2.update_layout(paper_bgcolor="rgb(255,255,255)", plot_bgcolor="rgb(255,255,255)")
                 st.write(fig2)
+
+            with col2:
+                try:
+                    df_tmp_grp = pd.read_csv("https://ciherraiz.pythonanywhere.com/ultimasgrp")[['id', 'grupo', 'grupo_recod', 'etiqueta_recod']]
+                    for i, p in df_tmp_grp.iterrows():
+                        st.markdown(str(p['id']) + ' ' + EMOJI[p['grupo_recod']] + ' ' +p['etiqueta_recod'])
+                except:
+                    st.markdown('Datos de agrupamiento aún no disponibles :hourglass_flowing_sand:')
+
+           
 
         time.sleep(1)
 
@@ -181,8 +186,10 @@ if menu == 'Configuración':
     cfg['longitud_serie'] = st.text_input('Longitud serie temporal', cfg['longitud_serie'])
     cfg['medidas_grafico_agrupacion'] = st.text_input('Máximo número de medidas en gráfico de agrupación', cfg['medidas_grafico_agrupacion'])
     cfg['numero_grupos'] = st.text_input('Número de grupos a realizar', cfg['numero_grupos'])
+    cfg['etiquetas_grupos'] = st.text_input('Nombres de los grupos', cfg['etiquetas_grupos'])
     cfg['espera_agrupar'] = st.text_input('Tiempo de espera entre agrupación (seg)', cfg['espera_agrupar'])
     cfg['minimo_medidas_agrupar'] = st.text_input('Mínimo de medidas para comenzar agrupación', cfg['minimo_medidas_agrupar'])
+
 
     #st.write(nueva_cfg)
     rp = requests.post('https://ciherraiz.pythonanywhere.com/conf', json=cfg)

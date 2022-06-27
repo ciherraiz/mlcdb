@@ -5,6 +5,14 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 import streamlit as st
+from PIL import Image
+
+logo = Image.open('uned_logo.png')
+emojies = []
+emojies.append(Image.open('rsz_neutral_face_emoji.png'))
+emojies.append(Image.open('rsz_confused_face_emoji.png'))
+emojies.append(Image.open('rsz_face_with_cold_sweat_emoji.png'))
+
 # Cargamos configuración
 r = requests.get(url='https://ciherraiz.pythonanywhere.com/conf')
 cfg = json.loads(r.text)
@@ -31,7 +39,23 @@ st.set_page_config(
 
 #Creamos menú de la izquierda
 with st.sidebar:
-    menu = st.selectbox('Opción', ('Individuo', 'Agrupado', 'Tiempo real', 'Configuración'))
+    menu = st.selectbox('Opción', ('Inicio', 'Individuo', 'Agrupado', 'Tiempo real', 'Configuración'))
+
+if menu == 'Inicio':
+    st.image(logo, caption='Logo UNED')
+    st.markdown("<h2 style='text-align: center; color: grey;'>UNIVERSIDAD NACIONAL DE EDUCACIÓN A DISTANCIA</h2>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: grey;'>Trabajo Fin de Máster del Máster Universitario en Ingeniería y Ciencia de Datos</h3>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: black;'>Análisis de pulsera inteligente para la detección de estados afectivos mediante aprendizaje no supervisado sobre series temporales</h1>", unsafe_allow_html=True)
+    st.markdown('#')
+    st.markdown("<h3 style='text-align: left; color: black;'>Carlos Ilia Herráiz Montalvo</h3>", unsafe_allow_html=True)
+    st.markdown('##')
+    st.markdown("<h3 style='text-align: left; color: grey;'>Dirigido por:</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: left; color: grey;'>Olga C. Santos Martín</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: left; color: grey;'>Raúl Cabestrero Alonso</h3>", unsafe_allow_html=True)
+
+
+
+
 
 if menu == 'Tiempo real':
     # Creamos un espacio vacío
@@ -63,6 +87,7 @@ if menu == 'Tiempo real':
             col1, col2 = st.columns(2)
 
             if len(df_total) > max_medidas_gr:
+                df_total.sort_values(by=['momento'])
                 df_total = df_total[-max_medidas_gr:]
                 df_gr = df_total
                 
@@ -84,7 +109,12 @@ if menu == 'Tiempo real':
                 try:
                     df_tmp_grp = pd.read_csv("https://ciherraiz.pythonanywhere.com/ultimasgrp")[['id', 'grupo', 'grupo_recod', 'etiqueta_recod']]
                     for i, p in df_tmp_grp.iterrows():
-                        st.markdown(str(p['id']) + ' ' + EMOJI[p['grupo_recod']] + ' ' +p['etiqueta_recod'])
+                        #st.markdown(str(p['id']) + ' ' + EMOJI[p['grupo_recod']] + ' ' +p['etiqueta_recod'])
+
+                        #st.markdown(EMOJI[p['grupo_recod']] + ' ' + str(p['id']))
+                        st.markdown('<h4>' + str(p['id']) + ' ' + str(p['etiqueta_recod']) + '</h4>', unsafe_allow_html=True )
+                        st.image(emojies[p['grupo_recod']])
+                        
                 except:
                     st.markdown('Datos de agrupamiento aún no disponibles :hourglass_flowing_sand:')
 
@@ -171,6 +201,16 @@ if menu=='Agrupado':
                                 mode='lines'))
             fig2.update_layout(showlegend=False)
         
+        fig1.update_layout(title="Mediciones agrupadas por segmentos",
+                            xaxis_title="Medición",
+                            yaxis_title="Frecuencia cardíaca",
+                            paper_bgcolor="rgb(255,255,255)",
+                            plot_bgcolor="rgb(255,255,255)")
+        fig2.update_layout(title="Segmentos agrupados",
+                            xaxis_title="Elemento de la secuencia",
+                            yaxis_title="Frecuencia cardíaca", 
+                            paper_bgcolor="rgb(255,255,255)",
+                            plot_bgcolor="rgb(255,255,255)")
         with gr1:
             st.write(fig1)
         with gr2:
